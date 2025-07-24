@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ERP - Sistema de Gestão</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Estilo para garantir que o layout ocupe toda a altura da tela */
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden; /* Evita barras de rolagem no corpo da página */
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .main-layout {
+      display: flex;
+      height: 100vh; /* Ocupa 100% da altura da viewport */
+    }
+    .sidebar {
+      width: 260px; /* Largura da barra lateral */
+      background-color: #2c3e50; /* Fundo escuro */
+      color: white;
+      padding: 1.5rem;
+      flex-shrink: 0; /* Impede que a sidebar encolha */
+      overflow-y: auto; /* Adiciona rolagem se os itens do menu não couberem */
+    }
+    .sidebar-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .sidebar-button {
+      display: block;
+      width: 100%;
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem;
+      border: none;
+      border-radius: 0.375rem;
+      background-color: transparent;
+      color: white;
+      text-align: left;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background-color 0.2s ease-in-out;
+    }
+    .sidebar-button:hover {
+      background-color: #34495e;
+    }
+    .sidebar-button.active {
+      background-color: #3498db; /* Cor para o botão ativo */
+    }
+    .content-area {
+      flex-grow: 1; /* Ocupa o espaço restante */
+      background-color: #f0f4f8;
+    }
+    #iframeTela {
+      width: 100%;
+      height: 100%;
+      border: none; /* Remove a borda do iframe */
+    }
+  </style>
+</head>
+<body>
+  <div class="main-layout">
+    <!-- Menu Lateral -->
+    <aside class="sidebar">
+            <nav id="menu-principal">
+        <button class="sidebar-button" onclick="carregarTela('dashboard.html', this)">Dashboard</button>
+        <button class="sidebar-button" onclick="carregarTela('cadastroProdutos.html', this)">Produtos</button>
+        <button class="sidebar-button" onclick="carregarTela('cadastroClientes.html', this)">Clientes/Fornecedores</button>
+        <button class="sidebar-button" onclick="carregarTela('vendas.html', this)">Vendas</button>
+        <button class="sidebar-button" onclick="carregarTela('fluxoCaixa.html', this)">Fluxo de Caixa</button>
+        <button class="sidebar-button" onclick="carregarTela('pedidosCompra.html', this)">Pedido de Compra</button>
+        <button class="sidebar-button" onclick="carregarTela('relatorios.html', this)">Relatórios</button>
+        <button class="sidebar-button" onclick="carregarTela('Calculadora.html', this)">Calculadora de Estampa</button>
+        <button class="sidebar-button" onclick="carregarTela('pontoequilibrio.html', this)">Ponto de Equilíbrio</button>
+        <button class="sidebar-button" onclick="carregarTela('precificação Rapida.html', this)">Precificação</button>
+        <button class="sidebar-button" onclick="carregarTela('configAvancada.html', this)">Configuração</button>
+      </nav>
+    </aside>
+
+    <!-- Área de Conteúdo com Iframe -->
+    <main class="content-area">
+      <iframe id="iframeTela" title="Conteúdo Principal do ERP"></iframe>
+    </main>
+  </div>
+
+  <script>
+    const iframe = document.getElementById("iframeTela");
+    const menuButtons = document.querySelectorAll('#menu-principal .sidebar-button');
+
+    /**
+     * Carrega a página especificada no iframe e atualiza o estilo do botão ativo.
+     * @param {string} arquivo - O nome do arquivo HTML a ser carregado.
+     * @param {HTMLElement} botaoClicado - O elemento do botão que foi clicado.
+     */
+    function carregarTela(arquivo, botaoClicado) {
+      // Define o src do iframe para carregar a nova página
+      iframe.src = arquivo;
+
+      // Remove a classe 'active' de todos os botões
+      menuButtons.forEach(button => {
+        button.classList.remove('active');
+      });
+
+      // Adiciona a classe 'active' apenas ao botão que foi clicado
+      if (botaoClicado) {
+        botaoClicado.classList.add('active');
+      }
+    }
+
+    /**
+     * Função executada quando a página principal é carregada.
+     * Carrega a tela inicial do dashboard.
+     */
+    window.onload = () => {
+      // Define a tela inicial e marca o primeiro botão como ativo
+      const primeiroBotao = menuButtons[0];
+      carregarTela("dashboard.html", primeiroBotao);
+    };
+  </script>
+</body>
+</html>
