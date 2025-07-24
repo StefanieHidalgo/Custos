@@ -1,0 +1,660 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Central de Custos - Versão Final</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+        .tab-btn.active { border-color: #60A5FA; color: #EFF6FF; }
+        .tab-btn { transition: all 0.2s ease-in-out; border-bottom-width: 2px; }
+        .view-content.hidden, .app-section.hidden { display: none; }
+        input[type="number"], input[type="text"] { background-color: #374151; border-color: #4B5563; color: #F9FAFB; }
+        input[type="number"]:focus, input[type="text"]:focus { --tw-ring-color: #60A5FA; border-color: #60A5FA; }
+        ::-webkit-input-placeholder { color: #9CA3AF; }
+        :-ms-input-placeholder { color: #9CA3AF; }
+        ::placeholder { color: #9CA3AF; }
+        .file-upload-btn, .action-btn { background-color: #2563EB; transition: background-color 0.2s; }
+        .file-upload-btn:hover, .action-btn:hover { background-color: #1D4ED8; }
+        input[type="checkbox"] { appearance: none; background-color: #374151; border: 1px solid #4B5563; border-radius: 0.25rem; width: 1.25rem; height: 1.25rem; cursor: pointer; position: relative; top: 0.25rem; }
+        input[type="checkbox"]:checked { background-color: #2563EB; border-color: #2563EB; }
+        input[type="checkbox"]:checked::after { content: '✔'; position: absolute; color: white; font-size: 0.8rem; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+        
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #quote-preview, #quote-preview * {
+                visibility: visible;
+            }
+            #quote-preview {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background-color: white;
+                color: black;
+            }
+            #quote-preview h2, #quote-preview h3, #quote-preview p, #quote-preview th, #quote-preview td, #quote-preview span, #quote-preview a {
+                color: black !important;
+            }
+            #quote-preview #logo-print {
+                filter: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-300">
+
+    <!-- Login Screen -->
+    <div id="login-container" class="app-section flex items-center justify-center min-h-screen">
+        <div class="w-full max-w-md p-8 space-y-6 bg-gray-800 rounded-2xl shadow-lg">
+            <div class="text-center"><h1 class="text-3xl font-bold text-white">Bem-vindo(a)</h1><p class="text-gray-400 mt-2">Aceda à Central de Custos</p></div>
+            <div><label for="username" class="text-sm font-medium text-gray-400">O seu nome</label><input type="text" id="username" placeholder="Digite o seu nome completo" class="w-full p-3 mt-1 border rounded-lg transition"></div>
+            <button id="login-btn" class="action-btn w-full py-3 text-white font-semibold rounded-lg">Entrar</button>
+            <p id="login-error" class="text-red-400 text-center text-sm hidden">Utilizador não autorizado.</p>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app-container" class="app-section hidden">
+        <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-7xl">
+            <header class="text-center mb-10">
+                <div class="flex justify-between items-center"><div class="text-left"><p class="text-sm text-gray-400">Utilizador:</p><p id="logged-in-user" class="font-semibold text-white"></p></div><h1 class="text-4xl sm:text-5xl font-bold text-white mx-auto">Central de Custos</h1><button id="logout-btn" class="text-sm text-blue-400 hover:text-blue-300">Sair</button></div>
+            </header>
+
+            <div class="mb-8 flex justify-center border-b border-gray-700">
+                <nav class="flex flex-wrap justify-center space-x-2" aria-label="Tabs">
+                    <button id="tab-pricer" type="button" class="tab-btn active text-gray-400 hover:text-white px-4 py-3 font-medium text-sm rounded-t-lg border-transparent">Precificação</button>
+                    <button id="tab-stamp" type="button" class="tab-btn text-gray-400 hover:text-white px-4 py-3 font-medium text-sm rounded-t-lg border-transparent">Custo de Estampa</button>
+                    <button id="tab-fixed-costs" type="button" class="tab-btn text-gray-400 hover:text-white px-4 py-3 font-medium text-sm rounded-t-lg border-transparent">Custos Fixos</button>
+                    <button id="tab-quote" type="button" class="tab-btn text-gray-400 hover:text-white px-4 py-3 font-medium text-sm rounded-t-lg border-transparent">Orçamento</button>
+                </nav>
+            </div>
+
+            <main>
+                <!-- View: Precificação de Produtos -->
+                <div id="view-pricer" class="view-content">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="md:col-span-2 space-y-6">
+                            <div class="bg-gray-800 p-6 rounded-xl">
+                                <h2 class="text-xl font-semibold text-white border-b border-gray-700 pb-3 mb-4">Custos Variáveis do Produto</h2>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                                    <div><label for="item-name" class="block text-sm font-medium text-gray-400 mb-1">Nome do Item</label><input type="text" id="item-name" placeholder="Ex: Camiseta Branca" class="cost-input w-full p-3 border rounded-lg transition"></div>
+                                    <div><label for="cost-product" class="block text-sm font-medium text-gray-400 mb-1">Custo do Produto (R$)</label><input type="number" id="cost-product" placeholder="18.00" class="cost-input w-full p-3 border rounded-lg transition"></div>
+                                    <div><label for="cost-stamp" class="block text-sm font-medium text-gray-400 mb-1">Custo da Estampa (R$)</label><input type="number" id="cost-stamp" placeholder="19.17" class="cost-input w-full p-3 border rounded-lg transition"></div>
+                                    <div><label for="cost-labor" class="block text-sm font-medium text-gray-400 mb-1">Energia / M.O. (R$)</label><input type="number" id="cost-labor" placeholder="10.33" class="cost-input w-full p-3 border rounded-lg transition"></div>
+                                    <div><label for="cost-packaging" class="block text-sm font-medium text-gray-400 mb-1">Embalagem (R$)</label><input type="number" id="cost-packaging" placeholder="3.50" class="cost-input w-full p-3 border rounded-lg transition"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="md:col-span-1 space-y-6">
+                            <div class="bg-gray-800 p-6 rounded-xl space-y-4">
+                                <h2 class="text-xl font-semibold text-white">Definição de Preço</h2>
+                                <div><label for="markup-input" class="block text-sm font-medium text-gray-400 mb-1">Calcular por Markup (%)</label><input type="number" id="markup-input" value="100" class="w-full p-3 border rounded-lg transition"></div>
+                                <div><label for="sell-price-input" class="block text-sm font-medium text-gray-400 mb-1">Ou Definir Preço Final (R$)</label><input type="number" id="sell-price-input" placeholder="Ex: 99.90" class="w-full p-3 border rounded-lg transition"></div>
+                            </div>
+                            <div class="bg-gray-800 p-6 rounded-xl">
+                                <h2 class="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-3">Análise Final</h2>
+                                <div class="space-y-4">
+                                    <div><p class="text-sm text-gray-400">Custo Variável</p><p id="base-cost" class="text-lg font-medium text-white">R$ 0,00</p></div>
+                                    <div><p id="fixed-expenses-label" class="text-sm text-gray-400">Despesas Fixas</p><p id="fixed-expenses-pricer" class="text-lg font-medium text-white">R$ 0,00</p></div>
+                                    <hr class="border-gray-700">
+                                    <div><p class="text-sm font-semibold text-blue-400">Custo Total Final</p><p id="total-cost" class="text-2xl font-bold text-white">R$ 0,00</p></div>
+                                    <div><p class="text-sm font-semibold text-blue-400">Preço de Venda Final</p><p id="final-sell-price" class="text-2xl font-bold text-white">R$ 0,00</p></div>
+                                    <hr class="border-gray-700">
+                                    <div><p class="text-sm text-gray-400">Lucro Bruto por Peça</p><p id="gross-profit" class="text-xl font-bold">R$ 0,00</p></div>
+                                    <div><p class="text-sm text-gray-400">Margem de Lucro Final</p><p id="profit-margin" class="text-xl font-bold">0,00%</p></div>
+                                    <button id="add-to-quote-btn" class="action-btn w-full mt-4 py-2 text-white font-semibold rounded-lg">Adicionar ao Orçamento</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- View: Custo de Estampa -->
+                <div id="view-stamp" class="view-content hidden">
+                     <div class="bg-gray-800 p-6 sm:p-8 rounded-2xl max-w-4xl mx-auto">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div class="space-y-6">
+                                 <div class="space-y-4 p-6 bg-gray-900 rounded-xl"><h2 class="text-lg font-semibold text-white border-b border-gray-700 pb-2">1. Configuração do Material</h2><div><label for="roll-price" class="block text-sm font-medium text-gray-400">Preço do Rolo/Metro (R$)</label><input type="number" id="roll-price" value="72" class="mt-1 w-full p-2 border rounded-lg transition"></div><div><label for="roll-width" class="block text-sm font-medium text-gray-400">Largura do Rolo (cm)</label><input type="number" id="roll-width" value="57" class="mt-1 w-full p-2 border rounded-lg transition"></div><div><label for="roll-length" class="block text-sm font-medium text-gray-400">Comprimento do Rolo (cm)</label><input type="number" id="roll-length" value="100" class="mt-1 w-full p-2 border rounded-lg transition"></div></div>
+                                 <div class="space-y-4 p-6 bg-gray-900 rounded-xl"><h2 class="text-lg font-semibold text-white border-b border-gray-700 pb-2">2. Calcular Estampa</h2><p class="text-sm text-gray-400">Anexe um ficheiro `.png` ou insira as medidas manualmente.</p><input type="file" id="stamp-file-input" class="hidden" accept="image/png,image/jpeg"><label for="stamp-file-input" class="file-upload-btn cursor-pointer w-full text-center text-white font-semibold py-3 px-4 rounded-lg block">Anexar Ficheiro</label><p id="file-name" class="text-sm text-center text-gray-500 truncate">Nenhum ficheiro selecionado</p><div class="flex items-center space-x-2 pt-4"><hr class="border-gray-700 flex-grow"><span class="text-gray-500 text-sm">OU</span><hr class="border-gray-700 flex-grow"></div><div class="grid grid-cols-2 gap-2"><input type="number" id="manual-stamp-width" placeholder="Largura (cm)" class="p-2 border rounded-lg"><input type="number" id="manual-stamp-height" placeholder="Altura (cm)" class="p-2 border rounded-lg"></div><button id="add-manual-stamp-btn" class="action-btn w-full py-2 text-white font-semibold rounded-lg">Adicionar Estampa Manual</button></div>
+                            </div>
+                            <div class="space-y-4 p-6 bg-gray-900 rounded-xl"><h2 class="text-lg font-semibold text-white border-b border-gray-700 pb-2">3. Resultados</h2><button id="clear-stamps-btn" class="text-xs text-blue-400 hover:text-blue-300 float-right -mt-8">Limpar Lista</button><div id="stamp-results-container" class="space-y-3 max-h-64 overflow-y-auto pr-2"><p id="results-placeholder" class="text-gray-500 text-center py-10">Aguardando estampas...</p></div><div id="stamp-actions" class="pt-4 border-t border-gray-700"><div class="flex justify-between items-center"><span class="text-lg font-semibold text-white">Custo Selecionado:</span><span id="total-stamp-cost" class="text-2xl font-bold text-blue-400">R$ 0,00</span></div><button id="add-stamps-to-pricer" class="action-btn w-full mt-4 py-3 text-white font-semibold rounded-lg">Adicionar à Precificação</button></div></div>
+                        </div>
+                        <canvas id="image-processing-canvas" class="hidden"></canvas>
+                    </div>
+                </div>
+
+                <!-- View: Custos Fixos -->
+                <div id="view-fixed-costs" class="view-content hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                        <div class="bg-gray-800 p-6 rounded-xl"><h2 class="text-xl font-semibold text-white border-b border-gray-700 pb-3 mb-4">Itens de Custo Fixo Mensal</h2><div id="fixed-cost-list" class="space-y-3 min-h-[100px]"></div><div class="mt-4 flex space-x-2"><input type="text" id="new-cost-name" placeholder="Nome do Custo" class="w-2/3 p-2 border rounded-lg"><input type="number" id="new-cost-value" placeholder="Valor (R$)" class="w-1/3 p-2 border rounded-lg"></div><button id="add-fixed-cost-btn" class="action-btn w-full mt-3 py-2 text-white font-semibold rounded-lg">Adicionar Custo</button></div>
+                         <div class="bg-gray-800 p-6 rounded-xl space-y-6"><h2 class="text-xl font-semibold text-white border-b border-gray-700 pb-3">Rateio dos Custos</h2><div><label for="sales-goal" class="block text-sm font-medium text-gray-400 mb-1">Meta de Vendas Mensal (unidades)</label><input type="number" id="sales-goal" value="100" class="w-full p-3 border rounded-lg transition"></div><div class="pt-4 border-t border-gray-700 space-y-4"><div><p class="text-sm text-gray-400">Custo Fixo Total Mensal</p><p id="total-fixed-cost" class="text-2xl font-bold text-white">R$ 0,00</p></div><div><p class="text-sm font-semibold text-blue-400">Custo Fixo por Peça (Rateio)</p><p id="fixed-cost-per-item" class="text-2xl font-bold text-blue-400">R$ 0,00</p></div></div></div>
+                    </div>
+                </div>
+
+                <!-- View: Orçamento -->
+                <div id="view-quote" class="view-content hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                        <!-- Coluna de Edição -->
+                        <div class="lg:col-span-2 space-y-6">
+                            <div class="bg-gray-800 p-6 rounded-xl"><h2 class="text-xl font-semibold text-white border-b border-gray-700 pb-3 mb-4">1. Dados do Cliente</h2><div class="space-y-4"><div><label for="client-name" class="block text-sm font-medium text-gray-400 mb-1">Nome do Cliente</label><input type="text" id="client-name" class="w-full p-2 border rounded-lg"></div><div><label for="client-phone" class="block text-sm font-medium text-gray-400 mb-1">Telefone</label><input type="text" id="client-phone" class="w-full p-2 border rounded-lg"></div></div></div>
+                            <div class="bg-gray-800 p-6 rounded-xl"><h2 class="text-xl font-semibold text-white border-b border-gray-700 pb-3 mb-4">2. Personalização</h2><div class="space-y-4"><div><label for="logo-url" class="block text-sm font-medium text-gray-400 mb-1">URL do Logo</label><input type="text" id="logo-url" class="w-full p-2 border rounded-lg"></div><button id="remove-logo-btn" class="w-full py-2 text-sm text-red-400 hover:text-red-300 border border-red-400 rounded-lg">Remover Logo</button></div></div>
+                            <div class="bg-gray-800 p-6 rounded-xl"><h2 class="text-xl font-semibold text-white border-b border-gray-700 pb-3 mb-4">3. Itens do Orçamento</h2><div id="quote-items-list" class="space-y-3"></div></div>
+                        </div>
+                        <!-- Coluna de Pré-visualização -->
+                        <div class="lg:col-span-3">
+                            <div class="bg-gray-800 p-6 rounded-xl">
+                                <div class="flex justify-between items-center"><h2 class="text-xl font-semibold text-white">4. Pré-visualização</h2><button id="print-quote-btn" class="action-btn px-4 py-2 text-sm text-white font-semibold rounded-lg">Imprimir / Gerar PDF</button></div>
+                                <div id="quote-preview" class="mt-4 bg-white text-black p-8 rounded-lg">
+                                    <div class="flex justify-between items-start border-b pb-4 border-gray-300">
+                                        <div><h2 class="text-2xl font-bold text-gray-800">ORÇAMENTO</h2><p class="text-sm text-gray-500">Data: <span id="quote-date"></span></p></div>
+                                        <img id="logo-print" src="https://i.imgur.com/AMi3S3D.jpeg" alt="Logo" class="h-12">
+                                    </div>
+                                    <div class="mt-6 grid grid-cols-2 gap-4">
+                                        <div><h3 class="font-semibold text-gray-800">Cliente:</h3><p id="quote-client-name" class="text-gray-600">A preencher</p></div>
+                                        <div><h3 class="font-semibold text-gray-800">Telefone:</h3><p id="quote-client-phone" class="text-gray-600">A preencher</p></div>
+                                    </div>
+                                    <div class="mt-6">
+                                        <table class="w-full text-left">
+                                            <thead><tr class="border-b border-gray-400"><th class="py-2 font-semibold">Item</th><th class="py-2 font-semibold text-center">Qtd.</th><th class="py-2 font-semibold text-right">Vlr. Unit.</th><th class="py-2 font-semibold text-right">Vlr. Total</th></tr></thead>
+                                            <tbody id="quote-preview-items"></tbody>
+                                        </table>
+                                    </div>
+                                    <div class="mt-6 border-t pt-4 border-gray-400 flex justify-end">
+                                        <div class="w-1/2 text-right"><div class="flex justify-between"><span class="font-semibold">Subtotal:</span><span id="quote-subtotal">R$ 0,00</span></div><div class="flex justify-between mt-2"><span class="text-xl font-bold">TOTAL:</span><span id="quote-total" class="text-xl font-bold">R$ 0,00</span></div></div>
+                                    </div>
+                                    <footer class="mt-8 pt-4 border-t border-gray-300 text-xs text-gray-500 text-center">
+                                        <p><strong>Presto Store</strong> - CNPJ: 61.150.235/0001-54</p>
+                                        <p>RUA COLONIA D'ASSUNCAO, 734, CASA 2, ITAIM PAULISTA, SAO PAULO, SP, 08111-230</p>
+                                        <p>Email: atendimento@prestostor.com | WhatsApp: 11 94776-8443</p>
+                                        <p><a href="https://www.prestostor.com" class="text-blue-600">www.prestostor.com</a> | <a href="https://acesse.one/t6BFq" class="text-blue-600">Cartão de Visita Digital</a></p>
+                                    </footer>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        const AppState = {
+            fixedCostPerItem: 0,
+            hasFixedCosts: false,
+            quoteItems: [],
+            updateFixedCost(newCost, hasCosts) {
+                this.fixedCostPerItem = newCost;
+                this.hasFixedCosts = hasCosts;
+                document.dispatchEvent(new CustomEvent('state-updated'));
+            },
+            addQuoteItem(item) {
+                this.quoteItems.push(item);
+                document.dispatchEvent(new CustomEvent('quote-updated'));
+            },
+            removeQuoteItem(index) {
+                this.quoteItems.splice(index, 1);
+                document.dispatchEvent(new CustomEvent('quote-updated'));
+            },
+            updateQuoteItemQty(index, qty) {
+                if (this.quoteItems[index]) {
+                    this.quoteItems[index].qty = qty;
+                }
+                document.dispatchEvent(new CustomEvent('quote-updated'));
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabs = { pricer: document.getElementById('tab-pricer'), stamp: document.getElementById('tab-stamp'), fixedCosts: document.getElementById('tab-fixed-costs'), quote: document.getElementById('tab-quote') };
+            const views = { pricer: document.getElementById('view-pricer'), stamp: document.getElementById('view-stamp'), fixedCosts: document.getElementById('view-fixed-costs'), quote: document.getElementById('view-quote') };
+            function switchTab(activeTab) {
+                Object.keys(tabs).forEach(key => {
+                    tabs[key].classList.toggle('active', key === activeTab);
+                    views[key].classList.toggle('hidden', key !== activeTab);
+                });
+            }
+            Object.keys(tabs).forEach(key => tabs[key].addEventListener('click', () => switchTab(key)));
+
+            setupLogin();
+            setupProductPricer();
+            setupStampCalculator();
+            setupFixedCosts();
+            setupQuote();
+        });
+        
+        function setupLogin() {
+            const loginContainer = document.getElementById('login-container');
+            const appContainer = document.getElementById('app-container');
+            const loginBtn = document.getElementById('login-btn');
+            const logoutBtn = document.getElementById('logout-btn');
+            const usernameInput = document.getElementById('username');
+            const loginError = document.getElementById('login-error');
+            const loggedInUserEl = document.getElementById('logged-in-user');
+            const authorizedUsers = ['gabriela presto', 'stefanie presto', 'jean lima', 'amanda ferreira'];
+
+            function checkLogin() {
+                const user = localStorage.getItem('loggedInUser');
+                if (user && authorizedUsers.includes(user.toLowerCase())) {
+                    loggedInUserEl.textContent = user;
+                    loginContainer.classList.add('hidden');
+                    appContainer.classList.remove('hidden');
+                } else {
+                    loginContainer.classList.remove('hidden');
+                    appContainer.classList.add('hidden');
+                }
+            }
+            loginBtn.addEventListener('click', () => {
+                const enteredName = usernameInput.value.trim().toLowerCase();
+                if (authorizedUsers.includes(enteredName)) {
+                    const originalName = authorizedUsers.find(u => u === enteredName);
+                    const capitalized = originalName.split(' ').map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(' ');
+                    localStorage.setItem('loggedInUser', capitalized);
+                    checkLogin();
+                } else {
+                    loginError.classList.remove('hidden');
+                }
+            });
+            usernameInput.addEventListener('input', () => loginError.classList.add('hidden'));
+            logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('loggedInUser');
+                usernameInput.value = '';
+                checkLogin();
+            });
+            checkLogin();
+        }
+
+        function setupProductPricer() {
+            const ui = {
+                itemName: document.getElementById('item-name'),
+                markupInput: document.getElementById('markup-input'),
+                sellPriceInput: document.getElementById('sell-price-input'),
+                baseCost: document.getElementById('base-cost'),
+                fixedExpensesLabel: document.getElementById('fixed-expenses-label'),
+                fixedExpensesPricer: document.getElementById('fixed-expenses-pricer'),
+                totalCost: document.getElementById('total-cost'),
+                finalSellPrice: document.getElementById('final-sell-price'),
+                grossProfit: document.getElementById('gross-profit'),
+                profitMargin: document.getElementById('profit-margin'),
+                costInputs: document.querySelectorAll('.cost-input'),
+                addToQuoteBtn: document.getElementById('add-to-quote-btn'),
+            };
+            let lastEdited = 'markup';
+            
+            function calculateAndDisplay() {
+                let baseCost = 0;
+                document.querySelectorAll('#view-pricer .cost-input').forEach(i => {
+                    if (i.id !== 'item-name') baseCost += parseFloat(i.value) || 0;
+                });
+                let fixedCost;
+                if (AppState.hasFixedCosts) {
+                    fixedCost = AppState.fixedCostPerItem;
+                    ui.fixedExpensesLabel.textContent = 'Despesas Fixas (Rateio)';
+                } else {
+                    fixedCost = baseCost * 0.05;
+                    ui.fixedExpensesLabel.textContent = 'Despesas Fixas (5% Padrão)';
+                }
+                const totalCost = baseCost + fixedCost;
+                let sellPrice, markup;
+                if (lastEdited === 'markup') {
+                    markup = parseFloat(ui.markupInput.value) || 0;
+                    sellPrice = totalCost * (1 + markup / 100);
+                    if(sellPrice > 0) ui.sellPriceInput.value = sellPrice.toFixed(2); else ui.sellPriceInput.value = '';
+                } else {
+                    sellPrice = parseFloat(ui.sellPriceInput.value) || 0;
+                    markup = totalCost > 0 ? ((sellPrice / totalCost) - 1) * 100 : 0;
+                    ui.markupInput.value = markup > 0 ? markup.toFixed(2) : '0.00';
+                }
+                const grossProfit = sellPrice - totalCost;
+                const profitMargin = sellPrice > 0 ? (grossProfit / sellPrice) * 100 : 0;
+                updateResults({ baseCost, fixedCost, totalCost, sellPrice, grossProfit, profitMargin });
+                savePricerInputs();
+            }
+
+            function updateResults(data) {
+                const format = (value) => `R$ ${value.toFixed(2)}`;
+                ui.baseCost.textContent = format(data.baseCost);
+                ui.fixedExpensesPricer.textContent = format(data.fixedCost);
+                ui.totalCost.textContent = format(data.totalCost);
+                ui.finalSellPrice.textContent = format(data.sellPrice);
+                ui.grossProfit.textContent = format(data.grossProfit);
+                ui.profitMargin.textContent = `${data.profitMargin.toFixed(2)}%`;
+                const profitColor = data.grossProfit < 0 ? '#F87171' : '#6EE7B7';
+                ui.grossProfit.style.color = profitColor;
+                ui.profitMargin.style.color = profitColor;
+            }
+
+            function savePricerInputs() {
+                ui.costInputs.forEach(input => localStorage.setItem(input.id, input.value));
+                localStorage.setItem('markup-input', ui.markupInput.value);
+            }
+
+            function loadPricerInputs() {
+                ui.costInputs.forEach(input => {
+                    const savedValue = localStorage.getItem(input.id);
+                    if (savedValue) input.value = savedValue;
+                });
+                const savedMarkup = localStorage.getItem('markup-input');
+                if (savedMarkup) ui.markupInput.value = savedMarkup;
+                calculateAndDisplay();
+            }
+            
+            ui.addToQuoteBtn.addEventListener('click', () => {
+                const name = ui.itemName.value.trim();
+                const price = parseFloat(document.getElementById('final-sell-price').textContent.replace('R$ ', '').replace(',', '.'));
+                if (name && price > 0) {
+                    AppState.addQuoteItem({ id: Date.now(), name, qty: 1, price });
+                    alert(`"${name}" adicionado ao orçamento!`);
+                    document.getElementById('tab-quote').click();
+                } else {
+                    alert('Por favor, defina um nome e calcule um preço para o item antes de adicionar ao orçamento.');
+                }
+            });
+
+            ui.costInputs.forEach(input => input.addEventListener('input', calculateAndDisplay));
+            ui.markupInput.addEventListener('input', () => { lastEdited = 'markup'; calculateAndDisplay(); });
+            ui.sellPriceInput.addEventListener('input', () => { lastEdited = 'price'; calculateAndDisplay(); });
+            document.addEventListener('state-updated', calculateAndDisplay);
+            loadPricerInputs();
+        }
+
+        function setupStampCalculator() {
+            const fileInput = document.getElementById('stamp-file-input');
+            const addStampsBtn = document.getElementById('add-stamps-to-pricer');
+            const addManualStampBtn = document.getElementById('add-manual-stamp-btn');
+            const clearStampsBtn = document.getElementById('clear-stamps-btn');
+
+            fileInput.addEventListener('change', handleFileSelect);
+            addStampsBtn.addEventListener('click', addSelectedStampsToPricer);
+            addManualStampBtn.addEventListener('click', handleAddManualStamp);
+            clearStampsBtn.addEventListener('click', clearStampResults);
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            document.getElementById('file-name').textContent = file.name;
+            document.getElementById('results-placeholder').textContent = 'Analisando imagem...';
+            const reader = new FileReader();
+            reader.onload = e => { const image = new Image(); image.onload = () => processImage(image); image.src = e.target.result; };
+            reader.readAsDataURL(file);
+        }
+
+        function processImage(image) {
+            const canvas = document.getElementById('image-processing-canvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            canvas.width = image.width; canvas.height = image.height;
+            ctx.drawImage(image, 0, 0);
+            try {
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const stamps = findStamps(imageData);
+                displayStampResults(stamps, `Do ficheiro: ${document.getElementById('file-name').textContent}`);
+            } catch (e) { alert("Erro ao processar imagem. Use um .png com fundo transparente."); document.getElementById('results-placeholder').textContent = 'Erro na análise.'; }
+        }
+
+        function findStamps(imageData) {
+            const { width, height, data } = imageData;
+            const visited = new Uint8Array(width * height);
+            const stamps = [];
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const index = (y * width + x);
+                    if (!visited[index] && data[index * 4 + 3] > 0) {
+                        stamps.push(traceStamp(x, y, width, height, data, visited));
+                    }
+                }
+            }
+            return stamps;
+        }
+        
+        function traceStamp(startX, startY, width, height, data, visited) {
+            const queue = [[startX, startY]];
+            let minX = startX, maxX = startX, minY = startY, maxY = startY;
+            visited[startY * width + startX] = 1;
+            let head = 0;
+            while(head < queue.length) {
+                const [x, y] = queue[head++];
+                minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+                minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+                const neighbors = [[x, y - 1], [x, y + 1], [x - 1, y], [x + 1, y]];
+                for(const [nx, ny] of neighbors) {
+                    if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                        const index = ny * width + nx;
+                        if (!visited[index] && data[index * 4 + 3] > 0) {
+                            visited[index] = 1;
+                            queue.push([nx, ny]);
+                        }
+                    }
+                }
+            }
+            return { width: maxX - minX + 1, height: maxY - minY + 1, type: 'file' };
+        }
+
+        function handleAddManualStamp() {
+            const widthCm = parseFloat(document.getElementById('manual-stamp-width').value) || 0;
+            const heightCm = parseFloat(document.getElementById('manual-stamp-height').value) || 0;
+            if (widthCm > 0 && heightCm > 0) {
+                const manualStamp = { widthCm, heightCm, type: 'manual' };
+                displayStampResults([manualStamp], 'Estampa Manual');
+                document.getElementById('manual-stamp-width').value = '';
+                document.getElementById('manual-stamp-height').value = '';
+            } else {
+                alert('Por favor, insira uma largura e altura válidas.');
+            }
+        }
+
+        function displayStampResults(stamps, sourceName) {
+            const container = document.getElementById('stamp-results-container');
+            const placeholder = document.getElementById('results-placeholder');
+            if (container.contains(placeholder)) { container.innerHTML = ''; }
+            const rollPrice = parseFloat(document.getElementById('roll-price').value) || 0;
+            const rollWidth = parseFloat(document.getElementById('roll-width').value) || 0;
+            const rollLength = parseFloat(document.getElementById('roll-length').value) || 0;
+            const costPerCm2 = (rollWidth * rollLength) > 0 ? rollPrice / (rollWidth * rollLength) : 0;
+            stamps.forEach((stamp, index) => {
+                let widthCm, heightCm;
+                if (stamp.type === 'file') {
+                    const dpi = 96; widthCm = (stamp.width / dpi) * 2.54; heightCm = (stamp.height / dpi) * 2.54;
+                } else { widthCm = stamp.widthCm; heightCm = stamp.heightCm; }
+                const cost = widthCm * heightCm * costPerCm2;
+                const resultEl = document.createElement('div');
+                resultEl.className = 'p-3 bg-gray-800 rounded-lg flex justify-between items-center';
+                resultEl.innerHTML = `<div class="flex items-center space-x-3"><input type="checkbox" class="stamp-checkbox" data-cost="${cost.toFixed(2)}"><div><p class="font-medium text-white">${sourceName === 'Estampa Manual' ? 'Manual' : `Estampa ${index + 1}`}</p><p class="text-sm text-gray-400">${widthCm.toFixed(1)}cm x ${heightCm.toFixed(1)}cm</p></div></div><p class="font-semibold text-lg text-blue-400">R$ ${cost.toFixed(2)}</p>`;
+                container.appendChild(resultEl);
+            });
+            container.querySelectorAll('.stamp-checkbox').forEach(cb => cb.addEventListener('change', updateTotalStampCost));
+            updateTotalStampCost();
+        }
+
+        function clearStampResults() {
+            const container = document.getElementById('stamp-results-container');
+            container.innerHTML = '<p id="results-placeholder" class="text-gray-500 text-center py-10">Aguardando estampas...</p>';
+            document.getElementById('file-name').textContent = 'Nenhum ficheiro selecionado';
+            updateTotalStampCost();
+        }
+        
+        function updateTotalStampCost() {
+            let totalCost = 0;
+            document.querySelectorAll('.stamp-checkbox:checked').forEach(cb => { totalCost += parseFloat(cb.dataset.cost) || 0; });
+            document.getElementById('total-stamp-cost').textContent = `R$ ${totalCost.toFixed(2)}`;
+        }
+
+        function addSelectedStampsToPricer() {
+            let totalCost = 0;
+            document.querySelectorAll('.stamp-checkbox:checked').forEach(cb => { totalCost += parseFloat(cb.dataset.cost) || 0; });
+            const stampCostInput = document.getElementById('cost-stamp');
+            stampCostInput.value = totalCost.toFixed(2);
+            stampCostInput.dispatchEvent(new Event('input'));
+            document.getElementById('tab-pricer').click();
+            alert(`${totalCost.toFixed(2)} R$ adicionados ao Custo da Estampa!`);
+        }
+
+        function setupFixedCosts() {
+            const ui = {
+                list: document.getElementById('fixed-cost-list'),
+                nameInput: document.getElementById('new-cost-name'),
+                valueInput: document.getElementById('new-cost-value'),
+                addBtn: document.getElementById('add-fixed-cost-btn'),
+                salesGoal: document.getElementById('sales-goal'),
+                totalCost: document.getElementById('total-fixed-cost'),
+                costPerItem: document.getElementById('fixed-cost-per-item'),
+            };
+            let costs = [];
+            function saveCosts() {
+                localStorage.setItem('fixedCosts', JSON.stringify(costs));
+                localStorage.setItem('salesGoal', ui.salesGoal.value);
+            }
+            function loadCosts() {
+                const savedCosts = localStorage.getItem('fixedCosts');
+                const savedGoal = localStorage.getItem('salesGoal');
+                if (savedCosts) { costs = JSON.parse(savedCosts); }
+                if (savedGoal) { ui.salesGoal.value = savedGoal; }
+                render();
+            }
+            function render() {
+                ui.list.innerHTML = '';
+                let total = 0;
+                if(costs.length === 0) { ui.list.innerHTML = '<p class="text-gray-500 text-center py-4">Nenhum custo fixo adicionado.</p>'; }
+                costs.forEach((cost, index) => {
+                    total += cost.value;
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'p-2 bg-gray-700 rounded-lg flex justify-between items-center';
+                    itemEl.innerHTML = `<span>${cost.name}</span><span>R$ ${cost.value.toFixed(2)}</span><button data-index="${index}" class="remove-cost-btn text-red-400 hover:text-red-300 font-bold px-2">&times;</button>`;
+                    ui.list.appendChild(itemEl);
+                });
+                const salesGoal = parseFloat(ui.salesGoal.value) || 1;
+                const costPerItem = total / salesGoal;
+                ui.totalCost.textContent = `R$ ${total.toFixed(2)}`;
+                ui.costPerItem.textContent = `R$ ${costPerItem.toFixed(2)}`;
+                AppState.updateFixedCost(costPerItem, costs.length > 0);
+                saveCosts();
+            }
+            ui.addBtn.addEventListener('click', () => {
+                const name = ui.nameInput.value.trim();
+                const value = parseFloat(ui.valueInput.value);
+                if (name && value > 0) {
+                    costs.push({ name, value });
+                    ui.nameInput.value = ''; ui.valueInput.value = '';
+                    render();
+                }
+            });
+            ui.list.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-cost-btn')) {
+                    costs.splice(parseInt(e.target.dataset.index), 1);
+                    render();
+                }
+            });
+            ui.salesGoal.addEventListener('input', render);
+            loadCosts();
+        }
+
+        function setupQuote() {
+            const ui = {
+                clientName: document.getElementById('client-name'),
+                clientPhone: document.getElementById('client-phone'),
+                logoUrlInput: document.getElementById('logo-url'),
+                removeLogoBtn: document.getElementById('remove-logo-btn'),
+                logoPrint: document.getElementById('logo-print'),
+                itemsList: document.getElementById('quote-items-list'),
+                previewName: document.getElementById('quote-client-name'),
+                previewPhone: document.getElementById('quote-client-phone'),
+                previewDate: document.getElementById('quote-date'),
+                previewItems: document.getElementById('quote-preview-items'),
+                previewSubtotal: document.getElementById('quote-subtotal'),
+                previewTotal: document.getElementById('quote-total'),
+                printBtn: document.getElementById('print-quote-btn'),
+            };
+
+            function renderQuote() {
+                // Render form
+                ui.clientName.value = localStorage.getItem('quoteClientName') || '';
+                ui.clientPhone.value = localStorage.getItem('quoteClientPhone') || '';
+                const defaultLogo = 'https://i.imgur.com/AMi3S3D.jpeg';
+                const savedLogo = localStorage.getItem('quoteLogoUrl');
+                ui.logoUrlInput.value = savedLogo === null ? defaultLogo : savedLogo;
+
+                // Render item list for editing
+                ui.itemsList.innerHTML = '';
+                if (AppState.quoteItems.length === 0) {
+                    ui.itemsList.innerHTML = '<p class="text-gray-500 text-center py-4">Nenhum item adicionado.</p>';
+                }
+                AppState.quoteItems.forEach((item, index) => {
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'p-3 bg-gray-700 rounded-lg space-y-2';
+                    itemEl.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <p class="font-medium text-white">${item.name}</p>
+                            <button data-index="${index}" class="remove-quote-item-btn text-red-400 hover:text-red-300 font-bold px-2">&times;</button>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <label class="text-sm">Qtd:</label>
+                            <input type="number" value="${item.qty}" data-index="${index}" class="quote-item-qty w-16 p-1 border rounded-md">
+                            <span class="text-sm text-gray-400">x R$ ${item.price.toFixed(2)}</span>
+                        </div>
+                    `;
+                    ui.itemsList.appendChild(itemEl);
+                });
+
+                // Render preview
+                const logoUrl = ui.logoUrlInput.value;
+                if (logoUrl) {
+                    ui.logoPrint.src = logoUrl;
+                    ui.logoPrint.style.display = 'block';
+                } else {
+                    ui.logoPrint.style.display = 'none';
+                }
+                ui.previewName.textContent = ui.clientName.value || 'A preencher';
+                ui.previewPhone.textContent = ui.clientPhone.value || 'A preencher';
+                ui.previewDate.textContent = new Date().toLocaleDateString('pt-BR');
+                ui.previewItems.innerHTML = '';
+                let total = 0;
+                AppState.quoteItems.forEach(item => {
+                    const itemTotal = item.qty * item.price;
+                    total += itemTotal;
+                    const row = document.createElement('tr');
+                    row.className = 'border-b border-gray-200';
+                    row.innerHTML = `<td class="py-2">${item.name}</td><td class="py-2 text-center">${item.qty}</td><td class="py-2 text-right">R$ ${item.price.toFixed(2)}</td><td class="py-2 text-right">R$ ${itemTotal.toFixed(2)}</td>`;
+                    ui.previewItems.appendChild(row);
+                });
+                ui.previewSubtotal.textContent = `R$ ${total.toFixed(2)}`;
+                ui.previewTotal.textContent = `R$ ${total.toFixed(2)}`;
+            }
+
+            ui.clientName.addEventListener('input', (e) => { localStorage.setItem('quoteClientName', e.target.value); renderQuote(); });
+            ui.clientPhone.addEventListener('input', (e) => { localStorage.setItem('quoteClientPhone', e.target.value); renderQuote(); });
+            ui.logoUrlInput.addEventListener('input', (e) => { localStorage.setItem('quoteLogoUrl', e.target.value); renderQuote(); });
+            ui.removeLogoBtn.addEventListener('click', () => {
+                ui.logoUrlInput.value = '';
+                localStorage.setItem('quoteLogoUrl', '');
+                renderQuote();
+            });
+            
+            ui.itemsList.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-quote-item-btn')) {
+                    AppState.removeQuoteItem(parseInt(e.target.dataset.index));
+                }
+            });
+            ui.itemsList.addEventListener('input', (e) => {
+                if (e.target.classList.contains('quote-item-qty')) {
+                    AppState.updateQuoteItemQty(parseInt(e.target.dataset.index), parseInt(e.target.value) || 1);
+                }
+            });
+
+            ui.printBtn.addEventListener('click', () => {
+                window.print();
+            });
+
+            document.addEventListener('quote-updated', renderQuote);
+            document.getElementById('tab-quote').addEventListener('click', renderQuote);
+            renderQuote();
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gestão de Pedidos de Compra</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4; }
+    .container { max-width: 900px; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
+    label { font-weight: bold; display: block; margin-top: 10px; }
+    input, select, button {
+      width: 100%; padding: 8px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    button { background: #f39c12; color: white; border: none; cursor: pointer; margin-top: 15px; }
+    button:hover { background: #d68910; }
+    table { width: 100%; margin-top: 20px; border-collapse: collapse; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: #eee; }
+    .nav-buttons { margin-top: 20px; }
+    .nav-buttons button { width: auto; margin-right: 10px; }
+    .btn-excluir { background: #e74c3c; color: white; border: none; border-radius: 4px; padding: 5px 8px; cursor: pointer; }
+    .btn-finalizar { background: #27ae60; color: white; border: none; border-radius: 4px; padding: 5px 8px; cursor: pointer; margin-left: 5px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Pedidos de Compra</h1>
+
+    <label>Produto</label>
+    <select id="produtoSelect"></select>
+
+    <label>Quantidade</label>
+    <input type="number" id="quantidade" min="1" value="1" />
+
+    <button onclick="adicionarPedido()">Adicionar Pedido</button>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th>Quantidade</th>
+          <th>Status</th>
+          <th>Data Criação</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="pedidosTabela"></tbody>
+    </table>
+
+    <div class="nav-buttons">
+      <button onclick="window.location.href='vendas.html'">Voltar para Vendas</button>
+      <button onclick="window.location.href='orcamento.html'">Ir para Orçamentos</button>
+    </div>
+  </div>
+
+  <script>
+    let produtos = JSON.parse(localStorage.getItem("produtosERP")) || [];
+    let pedidosCompra = JSON.parse(localStorage.getItem("pedidosCompraERP")) || [];
+
+    window.onload = function () {
+      carregarProdutos();
+      atualizarTabela();
+    };
+
+    function carregarProdutos() {
+      const produtoSelect = document.getElementById("produtoSelect");
+      produtoSelect.innerHTML = "";
+      produtos.forEach((p, i) => {
+        const option = document.createElement("option");
+        option.value = i;
+        option.textContent = `${p.nome} - Estoque: ${p.estoque}`;
+        produtoSelect.appendChild(option);
+      });
+      if (produtos.length === 0) {
+        produtoSelect.innerHTML = "<option disabled>Nenhum produto cadastrado</option>";
+      }
+    }
+
+    function adicionarPedido() {
+      const idxProduto = parseInt(document.getElementById("produtoSelect").value);
+      const qtd = parseInt(document.getElementById("quantidade").value);
+
+      if (isNaN(idxProduto) || idxProduto < 0 || qtd <= 0) {
+        alert("Selecione um produto e informe quantidade válida!");
+        return;
+      }
+
+      const produto = produtos[idxProduto];
+
+      pedidosCompra.push({
+        produto: produto.nome,
+        quantidade: qtd,
+        status: "Pendente",
+        dataCriacao: new Date().toISOString()
+      });
+
+      localStorage.setItem("pedidosCompraERP", JSON.stringify(pedidosCompra));
+      atualizarTabela();
+    }
+
+    function atualizarTabela() {
+      const tbody = document.getElementById("pedidosTabela");
+      tbody.innerHTML = "";
+      pedidosCompra.forEach((pedido, i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${pedido.produto}</td>
+          <td>${pedido.quantidade}</td>
+          <td>${pedido.status}</td>
+          <td>${new Date(pedido.dataCriacao).toLocaleString()}</td>
+          <td>
+            <button class="btn-excluir" onclick="excluirPedido(${i})">Excluir</button>
+            ${pedido.status === "Pendente" ? `<button class="btn-finalizar" onclick="finalizarPedido(${i})">Finalizar</button>` : ''}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function excluirPedido(index) {
+      if(confirm("Deseja excluir este pedido?")){
+        pedidosCompra.splice(index, 1);
+        localStorage.setItem("pedidosCompraERP", JSON.stringify(pedidosCompra));
+        atualizarTabela();
+      }
+    }
+
+    function finalizarPedido(index) {
+      const pedido = pedidosCompra[index];
+      const produto = produtos.find(p => p.nome === pedido.produto);
+      if(produto){
+        produto.estoque += pedido.quantidade;
+        pedido.status = "Finalizado";
+
+        localStorage.setItem("produtosERP", JSON.stringify(produtos));
+        localStorage.setItem("pedidosCompraERP", JSON.stringify(pedidosCompra));
+        atualizarTabela();
+        alert("Pedido finalizado e estoque atualizado!");
+      } else {
+        alert("Produto não encontrado!");
+      }
+    }
+  </script>
+</body>
+</html>

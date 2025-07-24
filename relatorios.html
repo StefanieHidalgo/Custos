@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Relatórios Financeiros e Estoque</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4; }
+    .container { max-width: 900px; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
+    h1 { color: #333; }
+    .box { margin: 15px 0; padding: 10px; background: #f9f9f9; border-radius: 5px; }
+    .estoque-baixo { color: red; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Relatórios Financeiros e Estoque</h1>
+    <div class="box" id="relatorioFinanceiro"></div>
+    <div class="box" id="relatorioEstoque"></div>
+  </div>
+
+  <script>
+    window.onload = function() {
+      gerarRelatorios();
+    };
+
+    function gerarRelatorios() {
+      const orcamentos = JSON.parse(localStorage.getItem("orcamentosERP")) || [];
+      const produtos = JSON.parse(localStorage.getItem("produtosERP")) || [];
+      const config = JSON.parse(localStorage.getItem("configERP")) || { custoFixo:0, custoVariavel:0, custoPessoal:0 };
+
+      let totalVendas = 0;
+      let custoProdutos = 0;
+
+      orcamentos.forEach(o => {
+        o.produtos.forEach(p => {
+          totalVendas += p.total;
+          custoProdutos += p.custo * p.qtd;
+        });
+      });
+
+      const custosExtras = (config.custoFixo + config.custoVariavel + config.custoPessoal) / 100 * totalVendas;
+      const lucroBruto = totalVendas - custoProdutos;
+      const lucroLiquido = lucroBruto - custosExtras;
+
+      document.getElementById("relatorioFinanceiro").innerHTML = `
+        <h3>📊 Financeiro</h3>
+        <p><strong>Total de Vendas:</strong> R$ ${totalVendas.toFixed(2)}</p>
+        <p><strong>Custo Total Produtos:</strong> R$ ${custoProdutos.toFixed(2)}</p>
+        <p><strong>Custos Fixos/Variáveis/Pessoal:</strong> R$ ${custosExtras.toFixed(2)}</p>
+        <p><strong>Lucro Bruto:</strong> R$ ${lucroBruto.toFixed(2)}</p>
+        <p><strong>Lucro Líquido:</strong> <span style="color:green">R$ ${lucroLiquido.toFixed(2)}</span></p>
+      `;
+
+      let estoqueBaixo = produtos
+        .filter(p => p.estoque <= 2)
+        .map(p => `<li class="estoque-baixo">${p.nome} - Estoque: ${p.estoque}</li>`)
+        .join("");
+
+      document.getElementById("relatorioEstoque").innerHTML = `
+        <h3>📦 Estoque Baixo / Zerado</h3>
+        <ul>${estoqueBaixo || "<li>Todos com estoque adequado</li>"}</ul>
+      `;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cadastro de Produtos com Ponto de Equilíbrio</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans p-4 sm:p-6 lg:p-8">
+
+  <div class="container max-w-6xl mx-auto bg-white rounded-xl shadow-lg p-6 sm:p-8">
+    <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Cadastro de Produtos e Análise de Viabilidade</h1>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+
+      <!-- Coluna da Esquerda: Cadastro do Produto -->
+      <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4">1. Cadastrar Produto</h2>
+        <div class="space-y-4">
+          <div>
+            <label for="nomeProduto" class="block text-sm font-medium text-gray-700">Nome do Produto</label>
+            <input type="text" id="nomeProduto" placeholder="Ex: Camiseta Estampada" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+          </div>
+          <div>
+            <label for="custoVariavel" class="block text-sm font-medium text-gray-700">Custo Variável por Unidade (R$)</label>
+            <input type="number" id="custoVariavel" placeholder="Custo da matéria-prima, etc." class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+          </div>
+          <div>
+            <label for="precoVenda" class="block text-sm font-medium text-gray-700">Preço de Venda por Unidade (R$)</label>
+            <input type="number" id="precoVenda" placeholder="Por quanto você vai vender" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Coluna da Direita: Calculadora de Ponto de Equilíbrio -->
+      <div class="bg-blue-50 p-6 rounded-lg border border-blue-200">
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4">2. Calcular Ponto de Equilíbrio</h2>
+        <div class="space-y-4">
+          <div>
+            <label for="custoFixo" class="block text-sm font-medium text-gray-700">Custos Fixos Totais por Mês (R$)</label>
+            <input type="number" id="custoFixo" placeholder="Aluguel, salários, internet, etc." class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+          </div>
+
+          <div class="pt-4">
+            <h3 class="text-lg font-semibold text-gray-800">Resultados da Análise:</h3>
+            <div class="mt-4 space-y-3">
+              <div class="flex justify-between items-center bg-white p-3 rounded-lg">
+                <span class="font-medium text-gray-600">Margem de Contribuição por Unidade:</span>
+                <span id="margemContribuicao" class="font-bold text-lg text-green-600">R$ 0,00</span>
+              </div>
+              <div class="flex justify-between items-center bg-white p-3 rounded-lg">
+                <span class="font-medium text-gray-600">Ponto de Equilíbrio (em Unidades):</span>
+                <span id="pontoEquilibrioUnidades" class="font-bold text-lg text-blue-600">0</span>
+              </div>
+              <div class="flex justify-between items-center bg-white p-3 rounded-lg">
+                <span class="font-medium text-gray-600">Ponto de Equilíbrio (em Faturamento):</span>
+                <span id="pontoEquilibrioFaturamento" class="font-bold text-lg text-blue-600">R$ 0,00</span>
+              </div>
+            </div>
+             <p class="text-xs text-gray-500 mt-4 text-center">
+                O ponto de equilíbrio mostra o quanto você precisa vender para que suas receitas se igualem às suas despesas, ou seja, para não ter prejuízo.
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // --- SELETORES DOS ELEMENTOS ---
+    const custoVariavelInput = document.getElementById('custoVariavel');
+    const precoVendaInput = document.getElementById('precoVenda');
+    const custoFixoInput = document.getElementById('custoFixo');
+
+    const margemContribuicaoEl = document.getElementById('margemContribuicao');
+    const pontoEquilibrioUnidadesEl = document.getElementById('pontoEquilibrioUnidades');
+    const pontoEquilibrioFaturamentoEl = document.getElementById('pontoEquilibrioFaturamento');
+
+    /**
+     * Calcula e atualiza os valores do ponto de equilíbrio na tela.
+     * Esta função é chamada sempre que um dos valores de entrada é alterado.
+     */
+    function calcularPontoEquilibrio() {
+      // Converte os valores dos inputs para números. Se estiverem vazios, considera como 0.
+      const custoVariavel = parseFloat(custoVariavelInput.value) || 0;
+      const precoVenda = parseFloat(precoVendaInput.value) || 0;
+      const custoFixo = parseFloat(custoFixoInput.value) || 0;
+
+      // --- CÁLCULO DA MARGEM DE CONTRIBUIÇÃO ---
+      // É o valor que sobra da venda de um produto, após subtrair os custos variáveis.
+      // Esse valor contribuirá para pagar os custos fixos e gerar lucro.
+      const margemContribuicao = precoVenda - custoVariavel;
+      
+      // Atualiza o valor na tela, formatado como moeda brasileira.
+      margemContribuicaoEl.textContent = margemContribuicao.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+      // --- CÁLCULO DO PONTO DE EQUILÍBRIO ---
+      let peUnidades = 0;
+      let peFaturamento = 0;
+
+      // O cálculo só é feito se a margem de contribuição for positiva,
+      // para evitar divisão por zero ou resultados negativos sem sentido.
+      if (margemContribuicao > 0) {
+        // Ponto de Equilíbrio em Unidades = Custos Fixos / Margem de Contribuição por Unidade
+        peUnidades = Math.ceil(custoFixo / margemContribuicao);
+        
+        // Ponto de Equilíbrio em Faturamento = PE em Unidades * Preço de Venda
+        peFaturamento = peUnidades * precoVenda;
+      }
+      
+      // --- ATUALIZAÇÃO DOS RESULTADOS NA TELA ---
+      // Verifica se o resultado é um número válido antes de exibir.
+      if (isFinite(peUnidades)) {
+        pontoEquilibrioUnidadesEl.textContent = peUnidades.toLocaleString('pt-BR');
+      } else {
+        pontoEquilibrioUnidadesEl.textContent = '---';
+      }
+
+      if (isFinite(peFaturamento)) {
+        pontoEquilibrioFaturamentoEl.textContent = peFaturamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      } else {
+        pontoEquilibrioFaturamentoEl.textContent = '---';
+      }
+    }
+
+    // --- EVENT LISTENERS ---
+    // Adiciona "escutadores" aos campos de input. Sempre que o usuário digitar
+    // algo neles, a função calcularPontoEquilibrio será chamada.
+    custoVariavelInput.addEventListener('input', calcularPontoEquilibrio);
+    precoVendaInput.addEventListener('input', calcularPontoEquilibrio);
+    custoFixoInput.addEventListener('input', calcularPontoEquilibrio);
+
+    // --- INICIALIZAÇÃO ---
+    // Chama a função uma vez quando a página carrega para garantir que os valores iniciais (se houver) sejam processados.
+    window.onload = calcularPontoEquilibrio;
+  </script>
+</body>
+</html>

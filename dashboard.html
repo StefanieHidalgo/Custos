@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard Geral</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4; }
+    .container { max-width: 900px; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
+    h1 { color: #333; }
+    .card {
+      display: inline-block; width: 45%; margin: 10px; padding: 15px;
+      background: #f9f9f9; border-radius: 10px; box-shadow: 0 0 5px #ccc; text-align: center;
+    }
+    .valor { font-size: 24px; font-weight: bold; color: #4CAF50; }
+    .pendente { color: #f39c12; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Dashboard Geral</h1>
+    <div class="card">
+      <h3>Total Vendas (Mês)</h3>
+      <div class="valor" id="vendasMes">R$ 0,00</div>
+    </div>
+    <div class="card">
+      <h3>Pedidos de Compra Pendentes</h3>
+      <div class="valor pendente" id="pedidosPendentes">0</div>
+    </div>
+    <div class="card">
+      <h3>Produtos com Estoque Baixo</h3>
+      <div class="valor" id="estoqueBaixo">0</div>
+    </div>
+    <div class="card">
+      <h3>Lucro Acumulado</h3>
+      <div class="valor" id="lucroAcumulado">R$ 0,00</div>
+    </div>
+  </div>
+
+  <script>
+    window.onload = function () {
+      atualizarDashboard();
+    };
+
+    function atualizarDashboard() {
+      const orcamentos = JSON.parse(localStorage.getItem("orcamentosERP")) || [];
+      const pedidos = JSON.parse(localStorage.getItem("pedidosCompraERP")) || [];
+      const produtos = JSON.parse(localStorage.getItem("produtosERP")) || [];
+      const config = JSON.parse(localStorage.getItem("configERP")) || { custoFixo: 0, custoVariavel: 0, custoPessoal: 0 };
+
+      const mesAtual = new Date().getMonth();
+      let totalVendas = 0,
+        custoProdutos = 0;
+
+      orcamentos.forEach((o) => {
+        const data = new Date(o.data);
+        if (data.getMonth() === mesAtual) {
+          o.produtos.forEach((p) => {
+            totalVendas += p.total;
+            custoProdutos += p.custo * p.qtd;
+          });
+        }
+      });
+
+      const custosExtras = ((config.custoFixo + config.custoVariavel + config.custoPessoal) / 100) * totalVendas;
+      const lucroAcumulado = totalVendas - custoProdutos - custosExtras;
+
+      document.getElementById("vendasMes").textContent = `R$ ${totalVendas.toFixed(2)}`;
+      document.getElementById("pedidosPendentes").textContent = pedidos.filter((p) => p.status === "Pendente").length;
+      document.getElementById("estoqueBaixo").textContent = produtos.filter((p) => p.estoque <= 2).length;
+      document.getElementById("lucroAcumulado").textContent = `R$ ${lucroAcumulado.toFixed(2)}`;
+    }
+  </script>
+</body>
+</html>

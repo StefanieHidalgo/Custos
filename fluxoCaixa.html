@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fluxo de Caixa - ERP</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Estilos personalizados para complementar o Tailwind */
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+    .sidebar {
+      width: 250px;
+      background-color: #2c3e50; /* Cor de fundo escura para a sidebar */
+      color: white;
+      padding: 20px;
+      transition: width 0.3s;
+      flex-shrink: 0; /* Impede que a sidebar encolha */
+    }
+    .sidebar a {
+      display: block;
+      color: white;
+      padding: 10px 15px; /* Padding ajustado para mais itens */
+      text-decoration: none;
+      border-radius: 6px;
+      margin-bottom: 5px; /* Margem ajustada */
+      transition: background-color 0.3s;
+      font-size: 0.9rem; /* Fonte um pouco menor */
+    }
+    .sidebar a:hover, .sidebar a.active {
+      background-color: #3498db; /* Cor de destaque para item ativo/hover */
+    }
+    .main-content {
+      flex-grow: 1;
+      padding: 20px;
+      background-color: #f0f4f8; /* Fundo cinza claro para o conteúdo */
+      overflow-y: auto; /* Permite rolagem se o conteúdo for grande */
+    }
+    /* Responsividade */
+    @media (max-width: 768px) {
+      .app-layout {
+        flex-direction: column;
+      }
+      .sidebar {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .sidebar h2 {
+        width: 100%;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body class="font-sans">
+
+  <div class="app-layout">
+    <!-- Barra Lateral de Navegação -->
+    <aside class="sidebar">
+      <h2 class="text-2xl font-bold mb-6 text-center">ERP</h2>
+      <nav>
+        <a href="#" onclick="carregarTela('dashboard.html')">Dashboard</a>
+        <a href="#" onclick="carregarTela('cadastroProdutos.html')">Produtos</a>
+        <a href="#" onclick="carregarTela('cadastroClientes.html')">Clientes/Fornecedores</a>
+        <a href="#" onclick="carregarTela('vendas.html')">Vendas</a>
+        <a href="#" onclick="carregarTela('pontoequilibrio.html')">Ponto de Equilíbrio</a>
+        <a href="#" onclick="window.location.href='fluxoCaixa.html'" class="active">Fluxo de Caixa</a>
+        <a href="#" onclick="window.location.href='pedidosCompra.html'">Pedido de Compra</a>
+        <a href="#" onclick="carregarTela('relatorios.html')">Relatórios</a>
+        <a href="#" onclick="carregarTela('Calculadora.html')">Calculadora de Estampa</a>
+        <a href="#" onclick="carregarTela('precificação Rapida.html')">Precificação</a>
+        <a href="#" onclick="carregarTela('configAvancada.html')">Configuração</a>
+      </nav>
+    </aside>
+
+    <!-- Conteúdo Principal -->
+    <main class="main-content">
+      <div class="container max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-6 sm:p-8">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Fluxo de Caixa</h1>
+
+        <!-- Filtros -->
+        <div class="bg-gray-50 p-6 rounded-lg border mb-8">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Filtrar Lançamentos</h2>
+            <div class="flex flex-col sm:flex-row gap-4 items-end">
+                <div class="flex-1">
+                    <label for="dataInicio" class="block text-sm font-medium text-gray-700">Data Início</label>
+                    <input type="date" id="dataInicio" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                </div>
+                <div class="flex-1">
+                    <label for="dataFim" class="block text-sm font-medium text-gray-700">Data Fim</label>
+                    <input type="date" id="dataFim" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                </div>
+                <button onclick="filtrarLancamentos()" class="w-full sm:w-auto bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300">Filtrar</button>
+            </div>
+        </div>
+        
+        <!-- Adicionar Receita e Despesa -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Adicionar Receita -->
+            <div class="bg-green-50 p-6 rounded-lg border border-green-200">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Adicionar Nova Receita</h2>
+                 <div class="space-y-4">
+                    <div>
+                        <label for="descricaoReceita" class="block text-sm font-medium text-gray-700">Descrição</label>
+                        <input type="text" id="descricaoReceita" placeholder="Ex: Aporte de capital" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                    </div>
+                     <div>
+                        <label for="valorReceita" class="block text-sm font-medium text-gray-700">Valor (R$)</label>
+                        <input type="number" id="valorReceita" min="0" step="0.01" placeholder="0.00" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                    </div>
+                    <div>
+                        <label for="dataReceita" class="block text-sm font-medium text-gray-700">Data</label>
+                        <input type="date" id="dataReceita" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                    </div>
+                    <div>
+                        <button onclick="adicionarReceita()" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition duration-300">Adicionar Receita</button>
+                    </div>
+                </div>
+            </div>
+            <!-- Adicionar Despesa -->
+            <div class="bg-red-50 p-6 rounded-lg border border-red-200">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Adicionar Nova Despesa</h2>
+                 <div class="space-y-4">
+                    <div>
+                        <label for="descricaoDespesa" class="block text-sm font-medium text-gray-700">Descrição</label>
+                        <input type="text" id="descricaoDespesa" placeholder="Ex: Conta de luz" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                    </div>
+                     <div>
+                        <label for="valorDespesa" class="block text-sm font-medium text-gray-700">Valor (R$)</label>
+                        <input type="number" id="valorDespesa" min="0" step="0.01" placeholder="0.00" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                    </div>
+                    <div>
+                        <label for="dataDespesa" class="block text-sm font-medium text-gray-700">Data</label>
+                        <input type="date" id="dataDespesa" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                    </div>
+                    <div>
+                        <button onclick="adicionarDespesa()" class="w-full bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition duration-300">Adicionar Despesa</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="mensagem" class="text-center mb-4 min-h-[24px] font-semibold"></div>
+
+        <!-- Tabela de Lançamentos -->
+        <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Entradas e Despesas</h2>
+            <div class="max-h-[60vh] overflow-y-auto">
+                <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs text-white uppercase bg-gray-700 sticky top-0">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">Tipo</th>
+                            <th scope="col" class="px-6 py-3">Descrição / Cliente</th>
+                            <th scope="col" class="px-6 py-3 text-center">Data</th>
+                            <th scope="col" class="px-6 py-3 text-right">Valor (R$)</th>
+                            <th scope="col" class="px-6 py-3 text-center">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lancamentosTabela">
+                        <!-- Lançamentos serão inseridos aqui -->
+                    </tbody>
+                </table>
+            </div>
+             <div class="mt-6 text-right text-2xl font-bold text-gray-800">
+                Saldo do Período: <span id="saldoAtual">R$ 0,00</span>
+            </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+<script>
+  // Carrega os dados do localStorage ou inicializa arrays vazios.
+  let vendas = JSON.parse(localStorage.getItem("vendasSalvas")) || [];
+  let despesas = JSON.parse(localStorage.getItem("despesasERP")) || [];
+  let receitas = JSON.parse(localStorage.getItem("receitasERP")) || [];
+
+  const mensagemEl = document.getElementById("mensagem");
+
+  function carregarTela(url) {
+    window.location.href = url;
+  }
+
+  function formatarDataBR(dataISO) {
+    if (!dataISO) return 'N/A';
+    const d = new Date(dataISO + 'T00:00:00');
+    return d.toLocaleDateString('pt-BR');
+  }
+  
+  function formatarMoeda(valor) {
+      return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  function calcularSaldo(listaLancamentos) {
+    return listaLancamentos.reduce((acc, lanc) => {
+        return lanc.tipo === 'entrada' ? acc + lanc.valor : acc - lanc.valor;
+    }, 0);
+  }
+
+  function carregarLancamentos(filtros = null) {
+    const tbody = document.getElementById("lancamentosTabela");
+    tbody.innerHTML = "";
+
+    const entradasDeVendas = vendas.map(v => ({
+        id: v.id,
+        origem: 'venda',
+        tipo: "entrada",
+        descricao: `Venda - ${v.nome}`,
+        data: v.data || new Date(v.id).toISOString().split('T')[0],
+        valor: v.produtos.reduce((total, p) => total + p.custoTotal, 0)
+    }));
+    
+    const entradasManuais = receitas.map(r => ({ ...r, origem: 'manual', tipo: 'entrada' }));
+    const saidas = despesas.map(d => ({ ...d, origem: 'manual', tipo: 'saida'}));
+
+    let listaCompleta = [...entradasDeVendas, ...entradasManuais, ...saidas];
+
+    if (filtros && filtros.inicio && filtros.fim) {
+      listaCompleta = listaCompleta.filter(l => {
+        const dataLancamento = new Date(l.data + 'T00:00:00');
+        return dataLancamento >= filtros.inicio && dataLancamento <= filtros.fim;
+      });
+    }
+
+    listaCompleta.sort((a, b) => new Date(b.data) - new Date(a.data));
+
+    if (listaCompleta.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4">Nenhum lançamento encontrado.</td></tr>`;
+    } else {
+        listaCompleta.forEach(lanc => {
+            const tr = document.createElement("tr");
+            const corValor = lanc.tipo === 'entrada' ? 'text-green-600' : 'text-red-600';
+            const tipoDesc = lanc.tipo === 'entrada' ? "Entrada" : "Despesa";
+            
+            const podeExcluir = lanc.origem === 'manual';
+            const funcaoExcluir = lanc.tipo === 'entrada' ? `excluirReceita('${lanc.id}')` : `excluirDespesa('${lanc.id}')`;
+            const botaoExcluirHTML = podeExcluir ? `<button class="bg-gray-500 text-white px-2 py-1 rounded-md hover:bg-gray-600 text-xs" onclick="${funcaoExcluir}">Excluir</button>` : "---";
+
+            tr.className = "bg-white border-b hover:bg-gray-50";
+            tr.innerHTML = `
+                <td class="px-6 py-4"><span class="font-semibold ${corValor}">${tipoDesc}</span></td>
+                <td class="px-6 py-4 font-medium text-gray-900">${lanc.descricao}</td>
+                <td class="px-6 py-4 text-center">${formatarDataBR(lanc.data)}</td>
+                <td class="px-6 py-4 text-right font-mono font-bold ${corValor}">${formatarMoeda(lanc.valor)}</td>
+                <td class="px-6 py-4 text-center">${botaoExcluirHTML}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    const saldo = calcularSaldo(listaCompleta);
+    const corSaldo = saldo >= 0 ? 'text-green-600' : 'text-red-600';
+    document.getElementById("saldoAtual").className = `font-bold ${corSaldo}`;
+    document.getElementById("saldoAtual").textContent = formatarMoeda(saldo);
+  }
+
+  function adicionarReceita() {
+    mensagemEl.textContent = "";
+    const desc = document.getElementById("descricaoReceita").value.trim();
+    const valor = parseFloat(document.getElementById("valorReceita").value);
+    const data = document.getElementById("dataReceita").value;
+
+    if (!desc || isNaN(valor) || valor <= 0 || !data) {
+      mensagemEl.textContent = "Preencha todos os campos da receita.";
+      mensagemEl.className = "text-center mb-4 min-h-[24px] font-semibold text-red-600";
+      return;
+    }
+
+    receitas.push({ id: Date.now().toString(), descricao: desc, valor, data });
+    localStorage.setItem("receitasERP", JSON.stringify(receitas));
+
+    document.getElementById("descricaoReceita").value = "";
+    document.getElementById("valorReceita").value = "";
+    document.getElementById("dataReceita").value = "";
+
+    mensagemEl.textContent = "Receita adicionada com sucesso!";
+    mensagemEl.className = "text-center mb-4 min-h-[24px] font-semibold text-green-600";
+    setTimeout(() => { mensagemEl.textContent = ""; }, 3000);
+
+    carregarLancamentos();
+  }
+
+  function adicionarDespesa() {
+    mensagemEl.textContent = "";
+    const desc = document.getElementById("descricaoDespesa").value.trim();
+    const valor = parseFloat(document.getElementById("valorDespesa").value);
+    const data = document.getElementById("dataDespesa").value;
+
+    if (!desc || isNaN(valor) || valor <= 0 || !data) {
+      mensagemEl.textContent = "Preencha todos os campos da despesa.";
+      mensagemEl.className = "text-center mb-4 min-h-[24px] font-semibold text-red-600";
+      return;
+    }
+
+    despesas.push({ id: Date.now().toString(), descricao: desc, valor, data });
+    localStorage.setItem("despesasERP", JSON.stringify(despesas));
+
+    document.getElementById("descricaoDespesa").value = "";
+    document.getElementById("valorDespesa").value = "";
+    document.getElementById("dataDespesa").value = "";
+
+    mensagemEl.textContent = "Despesa adicionada com sucesso!";
+    mensagemEl.className = "text-center mb-4 min-h-[24px] font-semibold text-green-600";
+    setTimeout(() => { mensagemEl.textContent = ""; }, 3000);
+
+    carregarLancamentos();
+  }
+  
+  function excluirReceita(id) {
+    receitas = receitas.filter(r => r.id !== id);
+    localStorage.setItem("receitasERP", JSON.stringify(receitas));
+    carregarLancamentos();
+  }
+
+  function excluirDespesa(id) {
+    despesas = despesas.filter(d => d.id !== id);
+    localStorage.setItem("despesasERP", JSON.stringify(despesas));
+    carregarLancamentos();
+  }
+
+  function filtrarLancamentos() {
+    const inicioInput = document.getElementById("dataInicio").value;
+    const fimInput = document.getElementById("dataFim").value;
+
+    if (!inicioInput || !fimInput) {
+      alert("Informe as duas datas para filtrar.");
+      carregarLancamentos();
+      return;
+    }
+    
+    const dtInicio = new Date(inicioInput + 'T00:00:00');
+    const dtFim = new Date(fimInput + 'T00:00:00');
+
+    if (dtFim < dtInicio) {
+      alert("A data final não pode ser anterior à inicial.");
+      return;
+    }
+
+    carregarLancamentos({ inicio: dtInicio, fim: dtFim });
+  }
+
+  window.onload = () => {
+    carregarLancamentos();
+  };
+</script>
+</body>
+</html>

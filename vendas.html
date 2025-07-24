@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ERP - Orçamento e Venda Integrados</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Bibliotecas para gerar PDF e Imagem -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    /* Estilo para garantir que o conteúdo a ser salvo tenha fundo branco na captura */
+    #orcamento-para-salvar {
+      background-color: white;
+    }
+    .tab-button-active {
+      background-color: #2563eb; /* bg-blue-600 */
+      color: white;
+    }
+    .tab-button-inactive {
+      background-color: #e5e7eb; /* bg-gray-200 */
+      color: #374151; /* text-gray-700 */
+    }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans p-4 sm:p-6 lg:p-8">
+
+  <!-- Container Principal -->
+  <div class="container max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-6 sm:p-8">
+
+    <!-- Botões de Abas -->
+    <div class="flex justify-center mb-8 border-b border-gray-200">
+      <button id="btnOrcamento" onclick="mostrarAba('orcamento')" class="tab-button-active text-lg font-semibold py-3 px-8 rounded-t-lg transition-colors duration-300">Orçamento</button>
+      <button id="btnVenda" onclick="mostrarAba('venda')" class="tab-button-inactive text-lg font-semibold py-3 px-8 rounded-t-lg transition-colors duration-300">Venda</button>
+    </div>
+
+    <!-- === ABA ORÇAMENTO === -->
+    <div id="abaOrcamento">
+      <!-- Seção do Orçamento que será salva como imagem/pdf -->
+      <div id="orcamento-para-salvar" class="p-4 sm:p-8">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Orçamento Atual</h1>
+        <table class="w-full text-sm text-left text-gray-500 rounded-lg overflow-hidden">
+          <thead class="text-xs text-white uppercase bg-blue-600">
+            <tr>
+              <th scope="col" class="px-6 py-3">Produto</th>
+              <th scope="col" class="px-6 py-3 text-center">Qtd</th>
+              <th scope="col" class="px-6 py-3 text-right">Custo Unit.</th>
+              <th scope="col" class="px-6 py-3 text-right">Custo Estampa</th>
+              <th scope="col" class="px-6 py-3 text-right">Custo Total</th>
+              <th scope="col" class="px-6 py-3 text-center print:hidden">Ação</th>
+            </tr>
+          </thead>
+          <tbody id="produtosTabela">
+            <!-- Linhas de produtos serão inseridas aqui -->
+          </tbody>
+        </table>
+        <div class="total-resumo mt-8 text-right">
+          <p class="text-2xl font-bold text-gray-800">
+            Custo Final Total: R$ <span id="custoFinalTotal">0.00</span>
+          </p>
+        </div>
+      </div>
+      <!-- Fim da seção do orçamento -->
+
+      <hr class="my-8">
+
+      <!-- Seção de Controles do Orçamento -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Coluna da Esquerda: Adicionar Produtos e Calcular Estampa -->
+        <div>
+          <h2 class="text-2xl font-semibold text-gray-700 mb-4">Controles do Orçamento</h2>
+          <div class="space-y-4 bg-gray-50 p-4 rounded-lg">
+            <div>
+              <label for="produtoSelect" class="block text-sm font-medium text-gray-700">Produto</label>
+              <select id="produtoSelect" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <option disabled selected>-- Selecione um produto --</option>
+              </select>
+            </div>
+            <div>
+              <label for="quantidade" class="block text-sm font-medium text-gray-700">Quantidade</label>
+              <input type="number" id="quantidade" min="1" value="1" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+            </div>
+            <button id="btnAddProduto" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300">
+              Adicionar Produto
+            </button>
+          </div>
+          <div class="mt-6 bg-gray-50 p-4 rounded-lg">
+            <h3 class="text-lg font-semibold text-gray-700">Cálculo do Custo da Estampa</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+              <div>
+                <label for="estampaLargura" class="block text-sm font-medium text-gray-700">Largura (cm)</label>
+                <input type="number" id="estampaLargura" min="0" step="0.01" value="58" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+              </div>
+              <div>
+                <label for="estampaAltura" class="block text-sm font-medium text-gray-700">Altura (cm)</label>
+                <input type="number" id="estampaAltura" min="0" step="0.01" value="100" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+              </div>
+            </div>
+            <div class="mt-4">
+              <label for="precoBaseEstampa" class="block text-sm font-medium text-gray-700">Preço base (R$) p/ 58x100cm</label>
+              <input type="number" id="precoBaseEstampa" min="0" step="0.01" value="71" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+            </div>
+            <div class="mt-4 font-semibold text-gray-800">
+              Custo calculado da estampa: R$ <span id="custoCalculadoEstampa">71.00</span>
+            </div>
+            <button onclick="atualizarCustoEstampa()" class="mt-4 w-full bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">
+              Calcular/Atualizar Custo
+            </button>
+          </div>
+        </div>
+
+        <!-- Coluna da Direita: Salvar, Exportar e Compartilhar -->
+        <div>
+          <h2 class="text-2xl font-semibold text-gray-700 mb-4">Ações do Orçamento</h2>
+          <div class="space-y-4 bg-gray-50 p-4 rounded-lg">
+             <button onclick="salvarOrcamento()" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition duration-300 flex items-center justify-center gap-2">
+                Salvar Orçamento
+             </button>
+            <button onclick="exportarOrcamento('jpg')" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition duration-300 flex items-center justify-center gap-2">
+              Salvar como JPG
+            </button>
+            <button onclick="exportarOrcamento('pdf')" class="w-full bg-red-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-700 transition duration-300 flex items-center justify-center gap-2">
+              Salvar como PDF
+            </button>
+          </div>
+          <div class="mt-6 bg-gray-50 p-4 rounded-lg">
+             <h3 class="text-lg font-semibold text-gray-700">Compartilhar Orçamento</h3>
+             <div class="mt-4">
+                <label for="whatsappNumber" class="block text-sm font-medium text-gray-700">Nº WhatsApp do Cliente (com DDD)</label>
+                <input type="tel" id="whatsappNumber" placeholder="Ex: 11987654321" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+             </div>
+             <button onclick="compartilharWhatsApp()" class="mt-4 w-full bg-teal-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-teal-600 transition duration-300 flex items-center justify-center gap-2">
+               Compartilhar no WhatsApp
+             </button>
+             <p class="text-xs text-gray-500 mt-2 text-center">Lembre-se de salvar o orçamento antes de compartilhar para poder anexá-lo na conversa.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- === ABA VENDA === -->
+    <div id="abaVenda" class="hidden">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Finalizar Venda</h1>
+        
+        <div class="mb-6 max-w-lg mx-auto">
+            <label for="orcamentoSelect" class="block text-sm font-medium text-gray-700 mb-2">Carregar Orçamento Salvo</label>
+            <select id="orcamentoSelect" onchange="carregarOrcamentoParaVenda()" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+              <option disabled selected>-- Selecione um orçamento salvo --</option>
+            </select>
+        </div>
+        
+        <div class="p-4 sm:p-8 border border-gray-200 rounded-lg">
+            <h2 class="text-2xl font-semibold text-center text-gray-700 mb-4">Itens da Venda</h2>
+            <table class="w-full text-sm text-left text-gray-500 rounded-lg overflow-hidden">
+              <thead class="text-xs text-white uppercase bg-gray-700">
+                <tr>
+                  <th scope="col" class="px-6 py-3">Produto</th>
+                  <th scope="col" class="px-6 py-3 text-center">Qtd</th>
+                  <th scope="col" class="px-6 py-3 text-right">Custo Unit.</th>
+                  <th scope="col" class="px-6 py-3 text-right">Custo Estampa</th>
+                  <th scope="col" class="px-6 py-3 text-right">Custo Total</th>
+                </tr>
+              </thead>
+              <tbody id="produtosTabelaVenda">
+                <!-- Linhas de produtos da venda serão inseridas aqui -->
+              </tbody>
+            </table>
+            <div class="total-resumo mt-8 text-right">
+              <p class="text-2xl font-bold text-gray-800">
+                Total da Venda: R$ <span id="custoFinalTotalVenda">0.00</span>
+              </p>
+            </div>
+        </div>
+        
+        <hr class="my-8">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+            <!-- Coluna da Esquerda: Finalizar Venda -->
+            <div class="bg-gray-50 p-6 rounded-lg flex flex-col justify-center">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4 text-center">Finalizar Venda</h2>
+                <p class="text-sm text-gray-600 mb-4 text-center">Ao finalizar, a venda será salva e o estoque dos produtos será atualizado permanentemente.</p>
+                <button onclick="finalizarVenda()" class="w-full bg-green-600 text-white font-bold py-3 px-10 rounded-lg hover:bg-green-700 transition duration-300">
+                    Finalizar Venda (Salvar e Baixar Estoque)
+                </button>
+            </div>
+
+            <!-- Coluna da Direita: Compartilhar Venda -->
+            <div class="bg-gray-50 p-6 rounded-lg">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4 text-center">Compartilhar Comprovante</h2>
+                <div>
+                    <label for="whatsappNumberVenda" class="block text-sm font-medium text-gray-700">Nº WhatsApp do Cliente (com DDD)</label>
+                    <input type="tel" id="whatsappNumberVenda" placeholder="Ex: 11987654321" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                </div>
+                <button onclick="compartilharVendaWhatsApp()" class="mt-4 w-full bg-teal-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-teal-600 transition duration-300 flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-whatsapp" viewBox="0 0 16 16"><path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/></svg>
+                    Compartilhar no WhatsApp
+                </button>
+            </div>
+        </div>
+    </div>
+
+  </div>
+
+  <!-- Modal de Notificação -->
+  <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-sm text-center">
+      <p id="modal-message" class="text-gray-800 mb-4"></p>
+      <button onclick="closeModal()" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition duration-300">
+        OK
+      </button>
+    </div>
+  </div>
+  
+  <!-- Modal de Input -->
+  <div id="inputModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-sm text-center">
+      <p id="inputModal-message" class="text-gray-800 mb-4"></p>
+      <input type="text" id="inputModal-text" class="block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm mb-4">
+      <div class="flex justify-center gap-4">
+        <button id="inputModal-ok" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition duration-300">Salvar</button>
+        <button id="inputModal-cancel" class="bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400 transition duration-300">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+
+<script>
+  // --- INICIALIZAÇÃO E DADOS ---
+  let produtos = [];
+  let orcamentoProdutos = [];
+  let vendaProdutos = [];
+  let custoEstampaAtual = 71;
+
+  // --- CONTROLE DAS ABAS E MODAIS ---
+  const abaOrcamentoDiv = document.getElementById('abaOrcamento');
+  const abaVendaDiv = document.getElementById('abaVenda');
+  const btnOrcamento = document.getElementById('btnOrcamento');
+  const btnVenda = document.getElementById('btnVenda');
+
+  const modal = document.getElementById('modal');
+  const modalMessage = document.getElementById('modal-message');
+  const inputModal = document.getElementById('inputModal');
+  const inputModalMessage = document.getElementById('inputModal-message');
+  const inputModalText = document.getElementById('inputModal-text');
+  const inputModalOk = document.getElementById('inputModal-ok');
+  const inputModalCancel = document.getElementById('inputModal-cancel');
+
+
+  function mostrarAba(aba) {
+    if (aba === 'orcamento') {
+      abaOrcamentoDiv.classList.remove('hidden');
+      abaVendaDiv.classList.add('hidden');
+      btnOrcamento.classList.replace('tab-button-inactive', 'tab-button-active');
+      btnVenda.classList.replace('tab-button-active', 'tab-button-inactive');
+    } else {
+      abaOrcamentoDiv.classList.add('hidden');
+      abaVendaDiv.classList.remove('hidden');
+      btnVenda.classList.replace('tab-button-inactive', 'tab-button-active');
+      btnOrcamento.classList.replace('tab-button-active', 'tab-button-inactive');
+      carregarOrcamentosSalvos();
+    }
+  }
+
+  function showModal(message) {
+    modalMessage.textContent = message;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+  function closeModal() {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  function showInputModal(message, defaultValue, callback) {
+    inputModalMessage.textContent = message;
+    inputModalText.value = defaultValue;
+    inputModal.classList.remove('hidden');
+    inputModal.classList.add('flex');
+
+    inputModalOk.onclick = () => {
+        if (inputModalText.value) {
+            callback(inputModalText.value);
+            closeInputModal();
+        }
+    };
+    inputModalCancel.onclick = () => closeInputModal();
+  }
+
+  function closeInputModal() {
+    inputModal.classList.add('hidden');
+    inputModal.classList.remove('flex');
+  }
+
+  // --- FUNÇÕES DE EXPORTAÇÃO E COMPARTILHAMENTO ---
+  function exportarOrcamento(formato) {
+    if (orcamentoProdutos.length === 0) {
+        showModal("Adicione produtos ao orçamento antes de exportar.");
+        return;
+    }
+    showModal(`Gerando arquivo ${formato.toUpperCase()}... Por favor, aguarde.`);
+    const orcamentoElement = document.getElementById('orcamento-para-salvar');
+    const botoesExcluir = orcamentoElement.querySelectorAll('.excluir-btn');
+    botoesExcluir.forEach(btn => btn.style.display = 'none');
+
+    html2canvas(orcamentoElement, { scale: 2, useCORS: true, logging: false })
+    .then(canvas => {
+      botoesExcluir.forEach(btn => btn.style.display = 'inline-block');
+      if (formato === 'jpg') {
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/jpeg', 0.9);
+        link.download = 'orcamento.jpg';
+        link.click();
+        showModal('Orçamento salvo como JPG!');
+      } else if (formato === 'pdf') {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] });
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width, canvas.height);
+        pdf.save('orcamento.pdf');
+        showModal('Orçamento salvo como PDF!');
+      }
+    }).catch(err => {
+        console.error("Erro ao gerar arquivo:", err);
+        showModal("Ocorreu um erro ao gerar o arquivo.");
+        botoesExcluir.forEach(btn => btn.style.display = 'inline-block');
+    });
+  }
+
+  function compartilharWhatsApp() {
+    const numero = document.getElementById('whatsappNumber').value.replace(/\D/g, '');
+    if (!numero) {
+      showModal("Por favor, insira o número do WhatsApp do cliente.");
+      return;
+    }
+    if (orcamentoProdutos.length === 0) {
+        showModal("Adicione pelo menos um produto ao orçamento antes de compartilhar.");
+        return;
+    }
+    const custoTotal = document.getElementById('custoFinalTotal').textContent;
+    let mensagem = `Olá! Segue o orçamento solicitado.\n\n${orcamentoProdutos.map(p => `*Produto:* ${p.nome}\n*Quantidade:* ${p.qtd}\n*Valor Total:* R$ ${p.custoTotal.toFixed(2)}\n`).join('\n')}*CUSTO FINAL TOTAL: R$ ${custoTotal}*\n\n(O arquivo com o detalhamento será enviado em anexo)`;
+    window.open(`https://wa.me/55${numero}?text=${encodeURIComponent(mensagem)}`, '_blank');
+  }
+
+  // --- LÓGICA DO ORÇAMENTO ---
+  function carregarProdutos() {
+    const produtoSelect = document.getElementById("produtoSelect");
+    produtoSelect.innerHTML = '<option disabled selected>-- Selecione um produto --</option>';
+    produtos.forEach((p, i) => {
+      const option = document.createElement("option");
+      option.value = i;
+      option.textContent = `${p.nome} - Estoque: ${p.estoque}`;
+      produtoSelect.appendChild(option);
+    });
+    if (produtos.length === 0) {
+      produtoSelect.innerHTML = "<option disabled selected>Nenhum produto cadastrado</option>";
+    }
+  }
+
+  function atualizarCustoEstampa() {
+    const largura = parseFloat(document.getElementById("estampaLargura").value);
+    const altura = parseFloat(document.getElementById("estampaAltura").value);
+    const precoBase = parseFloat(document.getElementById("precoBaseEstampa").value);
+    if (isNaN(largura) || largura <= 0 || isNaN(altura) || altura <= 0 || isNaN(precoBase) || precoBase <= 0) {
+      showModal("Informe valores válidos para a estampa.");
+      return;
+    }
+    const areaBase = 58 * 100;
+    custoEstampaAtual = Math.round(((largura * altura) / areaBase) * precoBase * 100) / 100;
+    document.getElementById("custoCalculadoEstampa").textContent = custoEstampaAtual.toFixed(2);
+    if (orcamentoProdutos.length > 0) {
+        orcamentoProdutos.forEach(p => {
+            p.custoEstampa = custoEstampaAtual;
+            p.custoUnitarioComEstampa = p.custoUnitario + custoEstampaAtual;
+            p.custoTotal = p.custoUnitarioComEstampa * p.qtd;
+        });
+        atualizarTabela();
+    }
+  }
+
+  function adicionarProduto() {
+    const idxProduto = parseInt(document.getElementById("produtoSelect").value);
+    const qtd = parseInt(document.getElementById("quantidade").value);
+    if (isNaN(idxProduto) || isNaN(qtd) || qtd <= 0) {
+      showModal("Selecione um produto e informe uma quantidade válida.");
+      return;
+    }
+    const produto = produtos[idxProduto];
+    if (qtd > produto.estoque) {
+        showModal(`Estoque insuficiente para ${produto.nome}. Disponível: ${produto.estoque}`);
+        return;
+    }
+    const custoUnitarioComEstampa = produto.custoFinal + custoEstampaAtual;
+    const existeIndex = orcamentoProdutos.findIndex(p => p.nome === produto.nome);
+    if (existeIndex >= 0) {
+      orcamentoProdutos[existeIndex].qtd += qtd;
+      orcamentoProdutos[existeIndex].custoTotal = (orcamentoProdutos[existeIndex].custoUnitarioComEstampa) * orcamentoProdutos[existeIndex].qtd;
+    } else {
+      orcamentoProdutos.push({ nome: produto.nome, qtd: qtd, custoUnitario: produto.custoFinal, custoEstampa: custoEstampaAtual, custoUnitarioComEstampa: custoUnitarioComEstampa, custoTotal: custoUnitarioComEstampa * qtd });
+    }
+    atualizarTabela();
+    showModal("Produto adicionado ao orçamento!");
+  }
+
+  function atualizarTabela() {
+    const tbody = document.getElementById("produtosTabela");
+    tbody.innerHTML = "";
+    let custoTotalFinal = 0;
+    orcamentoProdutos.forEach((p, i) => {
+      custoTotalFinal += p.custoTotal;
+      const tr = document.createElement("tr");
+      tr.className = "bg-white border-b hover:bg-gray-50";
+      tr.innerHTML = `<td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">${p.nome}</td><td class="px-6 py-4 text-center">${p.qtd}</td><td class="px-6 py-4 text-right">R$ ${p.custoUnitario.toFixed(2)}</td><td class="px-6 py-4 text-right">R$ ${p.custoEstampa.toFixed(2)}</td><td class="px-6 py-4 text-right font-bold">R$ ${p.custoTotal.toFixed(2)}</td><td class="px-6 py-4 text-center"><button class="excluir-btn bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 text-xs" onclick="removerProduto(${i})">Excluir</button></td>`;
+      tbody.appendChild(tr);
+    });
+    document.getElementById("custoFinalTotal").textContent = custoTotalFinal.toFixed(2);
+  }
+
+  function removerProduto(index) {
+    orcamentoProdutos.splice(index, 1);
+    atualizarTabela();
+  }
+
+  function salvarOrcamento() {
+    if (orcamentoProdutos.length === 0) {
+      showModal("Adicione pelo menos um produto para salvar o orçamento.");
+      return;
+    }
+    showInputModal("Informe um nome para o orçamento:", `Orçamento ${new Date().toLocaleString()}`, (nomeOrcamento) => {
+        const id = Date.now();
+        const orcamentoSalvar = { id, nome: nomeOrcamento, produtos: [...orcamentoProdutos], custoEstampa: custoEstampaAtual };
+        let orcamentosSalvos = JSON.parse(localStorage.getItem("orcamentosSalvos")) || [];
+        orcamentosSalvos.push(orcamentoSalvar);
+        localStorage.setItem("orcamentosSalvos", JSON.stringify(orcamentosSalvos));
+        showModal("Orçamento salvo com sucesso!");
+        limparOrcamento();
+    });
+  }
+
+  function limparOrcamento() {
+    orcamentoProdutos = [];
+    atualizarTabela();
+    document.getElementById("quantidade").value = 1;
+    document.getElementById("produtoSelect").selectedIndex = 0;
+  }
+
+  // --- LÓGICA DA VENDA ---
+  function carregarOrcamentosSalvos() {
+    const select = document.getElementById("orcamentoSelect");
+    select.innerHTML = '<option disabled selected>-- Selecione um orçamento salvo --</option>';
+    let orcamentosSalvos = JSON.parse(localStorage.getItem("orcamentosSalvos")) || [];
+    orcamentosSalvos.forEach(o => {
+      const option = document.createElement("option");
+      option.value = o.id;
+      option.textContent = o.nome;
+      select.appendChild(option);
+    });
+  }
+
+  function carregarOrcamentoParaVenda() {
+    const idSelecionado = document.getElementById("orcamentoSelect").value;
+    if (!idSelecionado) return;
+    let orcamentosSalvos = JSON.parse(localStorage.getItem("orcamentosSalvos")) || [];
+    const orcamento = orcamentosSalvos.find(o => o.id == idSelecionado);
+    if (!orcamento) {
+        showModal("Orçamento não encontrado.");
+        return;
+    }
+    vendaProdutos = JSON.parse(JSON.stringify(orcamento.produtos)); // Deep copy
+    atualizarTabelaVenda();
+  }
+
+  function atualizarTabelaVenda() {
+    const tbody = document.getElementById("produtosTabelaVenda");
+    tbody.innerHTML = "";
+    let custoTotalFinal = 0;
+    vendaProdutos.forEach(p => {
+      custoTotalFinal += p.custoTotal;
+      const tr = document.createElement("tr");
+      tr.className = "bg-white border-b";
+      tr.innerHTML = `<td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">${p.nome}</td><td class="px-6 py-4 text-center">${p.qtd}</td><td class="px-6 py-4 text-right">R$ ${p.custoUnitario.toFixed(2)}</td><td class="px-6 py-4 text-right">R$ ${p.custoEstampa.toFixed(2)}</td><td class="px-6 py-4 text-right font-bold">R$ ${p.custoTotal.toFixed(2)}</td>`;
+      tbody.appendChild(tr);
+    });
+    document.getElementById("custoFinalTotalVenda").textContent = custoTotalFinal.toFixed(2);
+  }
+
+  function finalizarVenda() {
+    if (vendaProdutos.length === 0) {
+        showModal("Carregue um orçamento ou adicione produtos à venda antes de finalizar.");
+        return;
+    }
+    showInputModal("Informe o nome do cliente ou uma identificação para a venda:", `Venda ${new Date().toLocaleDateString()}`, (nomeVenda) => {
+        // 1. Salvar a venda
+        const id = Date.now();
+        const vendaSalvar = { id, nome: nomeVenda, produtos: [...vendaProdutos] };
+        let vendasSalvas = JSON.parse(localStorage.getItem("vendasSalvas")) || [];
+        vendasSalvas.push(vendaSalvar);
+        localStorage.setItem("vendasSalvas", JSON.stringify(vendasSalvas));
+
+        // 2. Baixar estoque
+        baixarEstoque();
+
+        showModal("Venda finalizada e estoque atualizado com sucesso!");
+        limparVenda();
+    });
+  }
+  
+  function baixarEstoque() {
+    vendaProdutos.forEach(produtoVendido => {
+        const produtoOriginal = produtos.find(p => p.nome === produtoVendido.nome);
+        if (produtoOriginal) {
+            produtoOriginal.estoque -= produtoVendido.qtd;
+        }
+    });
+    // Salva a lista de produtos atualizada no localStorage
+    localStorage.setItem("produtosERP", JSON.stringify(produtos));
+    // Recarrega a lista de produtos nos selects para refletir o novo estoque
+    carregarProdutos();
+  }
+
+  function limparVenda() {
+    vendaProdutos = [];
+    atualizarTabelaVenda();
+    document.getElementById("orcamentoSelect").selectedIndex = 0;
+    document.getElementById("whatsappNumberVenda").value = "";
+  }
+  
+  function compartilharVendaWhatsApp() {
+    const numero = document.getElementById('whatsappNumberVenda').value.replace(/\D/g, '');
+    if (!numero) {
+      showModal("Por favor, insira o número do WhatsApp do cliente.");
+      return;
+    }
+    if (vendaProdutos.length === 0) {
+        showModal("Não há itens na venda para compartilhar.");
+        return;
+    }
+    const custoTotal = document.getElementById('custoFinalTotalVenda').textContent;
+    let mensagem = `Olá! Segue o comprovante da sua compra.\n\n${vendaProdutos.map(p => `*Produto:* ${p.nome}\n*Quantidade:* ${p.qtd}\n*Valor Total:* R$ ${p.custoTotal.toFixed(2)}\n`).join('\n')}*TOTAL DA COMPRA: R$ ${custoTotal}*\n\nObrigado pela preferência!`;
+    window.open(`https://wa.me/55${numero}?text=${encodeURIComponent(mensagem)}`, '_blank');
+  }
+
+  // --- INICIALIZAÇÃO GERAL ---
+  window.onload = function() {
+    const produtosSalvos = localStorage.getItem("produtosERP");
+    if (produtosSalvos) {
+        produtos = JSON.parse(produtosSalvos);
+    } else {
+        showModal("Nenhum produto encontrado. Carregando dados de exemplo.");
+        produtos = [
+            { nome: "Camiseta Branca Algodão", estoque: 150, custoFinal: 25.50 },
+            { nome: "Caneca de Porcelana", estoque: 300, custoFinal: 12.00 },
+            { nome: "Moletom Preto com Capuz", estoque: 80, custoFinal: 75.80 },
+            { nome: "Boné Trucker", estoque: 120, custoFinal: 18.00 }
+        ];
+        localStorage.setItem("produtosERP", JSON.stringify(produtos));
+    }
+    carregarProdutos();
+    atualizarCustoEstampa();
+    document.getElementById('btnAddProduto').addEventListener('click', adicionarProduto);
+    mostrarAba('orcamento');
+  };
+</script>
+</body>
+</html>
